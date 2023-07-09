@@ -54,6 +54,11 @@ public:
     void ratioFixedChanged ();  // The toggle button
     void refreshSize    ();
     void selectPressed  ();
+
+    /// Called when the scale crop by % button is pressed
+    /// @post If inputs are invalid, nothing is done. If inputs are valid, the crop frame is scaled by the user provided percentage. Downscaling is clamped at 1px x 1px. Upscaling is clamped at the image boundaries. If the user tries to scale the crop area larger than the available area, it will scale as far as possible and then stop. The algorithm keeps the scale area approximately centered around its previous centroid (except for tiny error when rounding to whole pixel values).
+    void scalePressed  ();
+
     void doresetCrop    ();
     void setDimensions   (int mw, int mh);
     void enabledChanged () override;
@@ -77,7 +82,20 @@ public:
     void cropBottomLeftResized  (int &x, int &y, int &w, int &h, float custom_ratio=0.f) override;
     void cropBottomRightResized (int &x, int &y, int &w, int &h, float custom_ratio=0.f) override;
     void cropInit           (int &x, int &y, int &w, int &h) override;
+
+    /// Resizes the crop frame.
+    /// Inputs are bound to references and the values are updated based on the outcome of this function.
+    /// The inputs may be changed because they fall outside the dimensions of the image or because the aspect ratio is wrong.
+    /// Note that a 1px x 1px crop frame would have x1==x2 and y1==y2.
+    /// The x and y values are pixel row/column indexes.
+    /// It is not possible to produce a crop that is 0px x 0px.
+    /// No matter what input is provided here, the crop size will be at least 1px x 1px.
+    /// @param[in,out] x1 Left or right x boundary (column index) of the desired frame
+    /// @param[in,out] x2 The other x boundary (column index) of the desired frame
+    /// @param[in,out] y1 Top or bottom y boundary (row index) of the desired frame
+    /// @param[in,out] y2 The other y boundary (row index) of the desired frame
     void cropResized        (int &x, int &y, int& x2, int& y2) override;
+    
     void cropManipReady     () override;
     bool inImageArea        (int x, int y) override;
     double getRatio         () const override;
@@ -107,6 +125,13 @@ private:
 
     Gtk::Button* selectCrop;
     Gtk::Button* resetCrop;
+    
+    /// The crop scale button
+    Gtk::Button* scaleCrop;
+
+    /// The crop scale percentage value input spinbutton
+    MySpinButton* scale_percentage;
+
     CropPanelListener* clistener;
     int opt;
     MySpinButton* x;

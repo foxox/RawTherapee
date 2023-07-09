@@ -26,6 +26,10 @@
 #include "../rtengine/procparams.h"
 #include "../rtengine/utils.h"
 
+#include <algorithm>    // for std::min, std::max
+#include <cmath>        // for std::roundf
+#include <iostream>     // for std::cout
+
 using namespace rtengine;
 using namespace rtengine::procparams;
 
@@ -58,7 +62,7 @@ public:
         ratios{
             {M("GENERAL_ASIMAGE"), 0.0},
             {M("GENERAL_CURRENT"), -1.0},
-            {"3:2", 3.0 / 2.0},                 // L1.5,        P0.666...
+            {"3:2 - Hagaki", 3.0 / 2.0},        // L1.5,        P0.666...
             {"4:3", 4.0 / 3.0},                 // L1.333...,   P0.75
             {"16:9", 16.0 / 9.0},               // L1.777...,   P0.5625
             {"16:10", 16.0 / 10.0},             // L1.6,        P0.625
@@ -145,6 +149,7 @@ Crop::Crop():
     methodgrid->get_style_context()->add_class("grid-spacing");
     setExpandAlignProperties(methodgrid, true, false, Gtk::ALIGN_FILL, Gtk::ALIGN_CENTER);
 
+    // Top and Left (x and y):
     Gtk::Label* xlab = Gtk::manage (new Gtk::Label (M("TP_CROP_X") + ":"));
     setExpandAlignProperties(xlab, false, false, Gtk::ALIGN_START, Gtk::ALIGN_CENTER);
 
@@ -159,6 +164,7 @@ Crop::Crop():
     setExpandAlignProperties(y, true, false, Gtk::ALIGN_END, Gtk::ALIGN_CENTER);
     y->set_width_chars(6);
 
+    // Width and Height:
     Gtk::Label* wlab = Gtk::manage (new Gtk::Label (M("TP_CROP_W") + ":"));
     setExpandAlignProperties(wlab, false, false, Gtk::ALIGN_START, Gtk::ALIGN_CENTER);
 
@@ -173,6 +179,7 @@ Crop::Crop():
     setExpandAlignProperties(h, true, false, Gtk::ALIGN_END, Gtk::ALIGN_CENTER);
     h->set_width_chars(6);
 
+    // Select and Reset buttons
     selectCrop = Gtk::manage (new Gtk::Button (M("TP_CROP_SELECTCROP")));
     setExpandAlignProperties(selectCrop, true, false, Gtk::ALIGN_FILL, Gtk::ALIGN_CENTER);
     selectCrop->get_style_context()->add_class("independent");
@@ -183,16 +190,32 @@ Crop::Crop():
     resetCrop->get_style_context()->add_class("independent");
     resetCrop->set_image (*Gtk::manage (new RTImage ("undo-small.png")));
 
-    methodgrid->attach (*xlab, 0, 0, 1, 1);
-    methodgrid->attach (*x, 1, 0, 1, 1);
-    methodgrid->attach (*ylab, 2, 0, 1, 1);
-    methodgrid->attach (*y, 3, 0, 1, 1);
-    methodgrid->attach (*wlab, 0, 1, 1, 1);
-    methodgrid->attach (*w, 1, 1, 1, 1);
-    methodgrid->attach (*hlab, 2, 1, 1, 1);
-    methodgrid->attach (*h, 3, 1, 1, 1);
-    methodgrid->attach (*selectCrop, 0, 2, 2, 1);
-    methodgrid->attach (*resetCrop, 2, 2, 2, 1);
+    // Scale crop row items
+    Gtk::Label* scale_label = Gtk::manage (new Gtk::Label (M("TP_CROP_SCALECROP_LABEL")));
+    setExpandAlignProperties(scale_label, false, false, Gtk::ALIGN_START, Gtk::ALIGN_CENTER);
+
+    scaleCrop = Gtk::manage (new Gtk::Button (M("TP_CROP_SCALECROP")));
+    setExpandAlignProperties(scaleCrop, true, false, Gtk::ALIGN_FILL, Gtk::ALIGN_CENTER);
+    scaleCrop->get_style_context()->add_class("independent");
+    scaleCrop->set_image (*Gtk::manage (new RTImage ("crop-small.png")));
+
+    scale_percentage = Gtk::manage (new MySpinButton ());
+    setExpandAlignProperties(scale_percentage, true, false, Gtk::ALIGN_END, Gtk::ALIGN_CENTER);
+    scale_percentage->set_width_chars(6);
+
+    methodgrid->attach (*xlab,              0, 0, 1, 1);
+    methodgrid->attach (*x,                 1, 0, 1, 1);
+    methodgrid->attach (*ylab,              2, 0, 1, 1);
+    methodgrid->attach (*y,                 3, 0, 1, 1);
+    methodgrid->attach (*wlab,              0, 1, 1, 1);
+    methodgrid->attach (*w,                 1, 1, 1, 1);
+    methodgrid->attach (*hlab,              2, 1, 1, 1);
+    methodgrid->attach (*h,                 3, 1, 1, 1);
+    methodgrid->attach (*selectCrop,        0, 2, 2, 1);
+    methodgrid->attach (*resetCrop,         2, 2, 2, 1);
+    methodgrid->attach (*scale_label,       0, 3, 1, 1);
+    methodgrid->attach (*scale_percentage,  1, 3, 1, 1);
+    methodgrid->attach (*scaleCrop,         2, 3, 2, 1);
     pack_start (*methodgrid, Gtk::PACK_EXPAND_WIDGET, 0 );
 
     Gtk::Separator* methodseparator = Gtk::manage (new Gtk::Separator(Gtk::ORIENTATION_HORIZONTAL));
@@ -327,6 +350,11 @@ Crop::Crop():
     ppi->set_range (50, 12000);
     ppi->set_value (300);
 
+    scale_percentage->set_digits (2);
+    scale_percentage->set_increments (0.1, 1.0);
+    scale_percentage->set_range (0.0, 10000.0);
+    scale_percentage->set_value (100.0);
+
     xconn = x->signal_value_changed().connect ( sigc::mem_fun(*this, &Crop::positionChanged), true);
     yconn = y->signal_value_changed().connect ( sigc::mem_fun(*this, &Crop::positionChanged), true);
     wconn = w->signal_value_changed().connect ( sigc::mem_fun(*this, &Crop::widthChanged), true);
@@ -336,6 +364,7 @@ Crop::Crop():
     oconn = orientation->signal_changed().connect( sigc::mem_fun(*this, &Crop::ratioChanged) );
     gconn = guide->signal_changed().connect( sigc::mem_fun(*this, &Crop::notifyListener) );
     selectCrop->signal_pressed().connect( sigc::mem_fun(*this, &Crop::selectPressed) );
+    scaleCrop->signal_pressed().connect( sigc::mem_fun(*this, &Crop::scalePressed) );
     resetCrop->signal_pressed().connect( sigc::mem_fun(*this, &Crop::doresetCrop) );
     ppi->signal_value_changed().connect( sigc::mem_fun(*this, &Crop::refreshSize) );
 
@@ -586,6 +615,73 @@ void Crop::selectPressed ()
     if (clistener) {
         clistener->cropSelectRequested ();
     }
+}
+
+void Crop::scalePressed ()
+{
+
+    xDirty = true;
+    yDirty = true;
+    wDirty = true;
+    hDirty = true;
+
+    // Lower bound clamp the user provided scale to 0.0 - no negative scales allowed
+    const float user_input_scale{std::max(0.0f, static_cast<float>(scale_percentage->get_value() / 100.0))};
+    
+    // Avoid divide by zero and other unexpected behavior by validating the inputs
+    if (nw <= 0 || nh <= 0 || nx < 0 || ny < 0 || maxw < 1 || maxh < 1 || nx > (maxw-1) || ny > (maxh-1))
+    {
+        std::cout << "Error validating crop scale inputs." << std::endl;
+        // return early before anything bad happens due to these bad inputs
+        return;
+    }
+
+    // Float versions of crop/image position/size variables for use in float math below
+    const auto nwf{static_cast<float>(nw)};
+    const auto nhf{static_cast<float>(nh)};
+    const auto nxf{static_cast<float>(nx)};
+    const auto nyf{static_cast<float>(ny)};
+    const auto maxwf{static_cast<float>(maxw)};
+    const auto maxhf{static_cast<float>(maxh)};
+
+    // Determine the maximum possible scale increase in both axes before the crop boundaries hit the sides of the full image - can't scale up any more than this.
+    const float min_x_margin{std::min(nxf, maxwf-nwf-nxf)}; // Min of the space on the left and right sides around the existing crop frame
+    const float min_y_margin{std::min(nyf, maxhf-nhf-nyf)}; // Min of the space above and below the existing crop frame
+    const float max_scale_width = 1.0f + ((2.0f * min_x_margin) / nwf);
+    const float max_scale_height = 1.0f + ((2.0f * min_y_margin) / nhf);
+    
+    // Get the minimum of the user input scale and the maximum scales computed above to keep the scaled crop frame from exceeding the uncropped image size
+    const float scale = std::min(std::min(max_scale_width, max_scale_height), user_input_scale);
+
+    // The new scaled width and height values are computed.
+    // Minimum width and height is 1.0
+    const float new_scaled_width_f = std::max(1.0f, nwf * scale);
+    const float new_scaled_height_f = std::max(1.0f, nhf * scale);
+
+    // Shift the x and y values by half of the change in size, to keep the crop frame centered
+    const float new_nxf = nxf - 0.5f * (new_scaled_width_f - nwf);
+    const float new_nyf = nyf - 0.5f * (new_scaled_height_f - nhf);
+
+    // cropResized binds all inputs to references, so the inputs must be lvalues, which we define here:
+    // We also cast from floats to ints here and clamp them to valid values.
+    // Note that 1 is subtracted from the width and height to convert from pixel space coordinates to pixel row/column indexes, as needed by the cropResized() function.
+    int new_x1{std::max(0,std::min(maxw-1,static_cast<int>(std::roundf(new_nxf))))};
+    int new_y1{std::max(0,std::min(maxh-1,static_cast<int>(std::roundf(new_nyf))))};
+    int new_x2{std::max(0,std::min(maxw-1,static_cast<int>(std::roundf(new_scaled_width_f + new_nxf)) - 1))};
+    int new_y2{std::max(0,std::min(maxh-1,static_cast<int>(std::roundf(new_scaled_height_f + new_nyf)) - 1))};
+
+    // Set the new crop frame
+    cropResized (new_x1, new_y1, new_x2, new_y2);
+
+    idle_register.add(
+        [this]() -> bool
+        {
+            notifyListener();
+            return false;
+        }
+    );
+
+    refreshSpins();
 }
 
 void Crop::doresetCrop ()
@@ -1417,94 +1513,73 @@ void Crop::cropInit (int &x, int &y, int &w, int &h)
     setEnabled(true);
 }
 
-void Crop::cropResized (int &x, int &y, int& x2, int& y2)
+void Crop::cropResized (int &x1, int &y1, int& x2, int& y2)
 {
+    // Clamp x2 to the range [0, maxw-1].
+    // maxw-1 is used so that if the max width is 1 (a 1 pixel wide image), x2 will be equal to 0, the column index of the one and only pixel column.
+    // The same concept applies to all of the other arithmetic below.
+    x2 = std::max(0,std::min(maxw-1, x2));
+    
+    // Clamp y2 to the range [0,maxh-1]
+    y2 = std::max(0,std::min(maxh-1, y2));
 
-    if (x2 < 0) {
-        x2 = 0;
-    }
-
-    if (y2 < 0) {
-        y2 = 0;
-    }
-
-    if (x2 >= maxw) {
-        x2 = maxw - 1;
-    }
-
-    if (y2 >= maxh) {
-        y2 = maxh - 1;
-    }
-
+    // Set W to be the distance between x2 and x1, plus 1 to change from pixel index units to a width
     int W;
+    W = std::abs(x2 - x1) + 1;
 
-    if (x < x2) {
-        W = x2 - x + 1;
-    } else {
-        W = x - x2 + 1;
-    }
-
-
+    // Set Y to be the smaller of y1 and y2: Y will be the distance from the top edge where the crop frame begins
     int Y;
-    if (y < y2) {
-        Y = y;
-    } else {
-        Y = y2;
-    }
+    Y = std::min(y1, y2);
 
-    if (W > maxw) {
-        W = maxw;
-    }
+    // Clamp W to maxw
+    W = std::min(W, maxw);
 
     int H;
+    // If lock ratio is active, then determine W and H according to the aspect ratio.
+    // The width and height are tweaked here by scaling the crop area relative to anchor point X,Y
     if (fixr->get_active()) {
-        double r = getRatio ();
+        const double r = getRatio ();
 
-        if (y <= y2) {
-            int W2max = (int)round ((maxh - Y) * r);
+        // If y1 is closer to the origin (top edge) than y2...
+        if (y1 <= y2) {
+            // Determine the maximum width
+            const int W2max = (int)round ((maxh - Y) * r);
 
             if (W > W2max) {
                 W = W2max;
             }
         } else {
-            int W2max = (int)round (y * r);
+            int W2max = (int)round (y1 * r);
 
             if (W > W2max) {
                 W = W2max;
             }
         }
 
+        // Compute H as a function of W and the aspect ratio
         H = (int)round(W / r);
 
-        if (x < x2) {
-            x2 = x + W - 1;
+        if (x1 < x2) {
+            x2 = x1 + W - 1;
         } else {
-            x2 = x - W + 1;
+            x2 = x1 - W + 1;
         }
 
-        if (y < y2) {
-            y2 = y + H - 1;
+        if (y1 < y2) {
+            y2 = y1 + H - 1;
         } else {
-            y2 = y - H + 1;
+            y2 = y1 - H + 1;
         }
     }
 
     int X;
-    if (x < x2) {
-        W = x2 - x + 1;
-        X = x;
-    } else {
-        W = x - x2 + 1;
-        X = x2;
-    }
 
-    if (y < y2) {
-        H = y2 - y + 1;
-        Y = y;
-    } else {
-        H = y - y2 + 1;
-        Y = y2;
-    }
+    // Set X and Y (the upper left boundary of the crop frame) as the smaller of x1,x2 and y1,y2, respectively.
+    X = std::min(x1,x2);
+    Y = std::min(y1,y2);
+    // Set W and H as the distances between the sides of the crop frame, plus one to convert from pixel index units to pixel size units
+    W = std::max(x1,x2) - X + 1;
+    H = std::max(y1,y2) - Y + 1;
 
     nx = X;
     ny = Y;
@@ -1568,6 +1643,7 @@ void Crop::setBatchMode (bool batchMode)
     guide->append (M("GENERAL_UNCHANGED"));
     removeIfThere (this, ppigrid);
     removeIfThere (methodgrid, selectCrop);
+    removeIfThere (methodgrid, scaleCrop);
     removeIfThere (methodgrid, resetCrop);
 }
 
