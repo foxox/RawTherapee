@@ -2149,7 +2149,7 @@ void Preferences::fillPreferences()
         }
     }
 
-    cropGuidesCombo->set_active(moptions.cropGuides);
+    cropGuidesCombo->set_active(static_cast<int>(moptions.cropGuides));
     cropAutoFitCB->set_active(moptions.cropAutoFit);
 
     addc.block(false);

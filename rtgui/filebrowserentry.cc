@@ -30,6 +30,7 @@
 #include "thumbbrowserbase.h"
 #include "thumbnail.h"
 #include "toolbar.h"
+#include "options.h"
 
 #include "../rtengine/procparams.h"
 
@@ -169,22 +170,23 @@ void FileBrowserEntry::customBackBufferUpdate (Cairo::RefPtr<Cairo::Context> c)
 {
     if(scale != 1.0 && cropParams->enabled) { // somewhere in pipeline customBackBufferUpdate is called when scale == 1.0, which is nonsense for a thumb
         if (state == SCropSelecting || state == SResizeH1 || state == SResizeH2 || state == SResizeW1 || state == SResizeW2 || state == SResizeTL || state == SResizeTR || state == SResizeBL || state == SResizeBR || state == SCropMove) {
-            drawCrop (c, prex, prey, prew, preh, 0, 0, scale, *cropParams, true, false);
+            drawCrop (c, prex, prey, prew, preh, 0, 0, scale, *cropParams, /* drawGuide= */ true, /* useBgColor= */ false);
         } else {
             rtengine::procparams::CropParams cparams = thumbnail->getProcParams().crop;
             switch (options.cropGuides) {
-            case Options::CROP_GUIDE_NONE:
+            case Options::CropGuidesMode::CROP_GUIDE_NONE:
                 cparams.guide = rtengine::procparams::CropParams::Guide::NONE;
                 break;
-            case Options::CROP_GUIDE_FRAME:
+            case Options::CropGuidesMode::CROP_GUIDE_FRAME:
                 cparams.guide = rtengine::procparams::CropParams::Guide::FRAME;
                 break;
-            default:
-                break;
+            case Options::CropGuidesMode::CROP_GUIDE_FULL:
+            // do nothing - leave the guide mode set the way it was before
+            break;
             }
 
             if (cparams.enabled && !thumbnail->isQuick()) { // Quick thumb have arbitrary sizes, so don't apply the crop
-                drawCrop (c, prex, prey, prew, preh, 0, 0, scale, cparams, true, false);
+                drawCrop (c, prex, prey, prew, preh, 0, 0, scale, cparams, /* drawGuide= */ true, /* useBgColor= */ false);
             }
         }
     }
