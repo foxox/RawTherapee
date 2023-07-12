@@ -1469,14 +1469,15 @@ void CropWindow::expose (Cairo::RefPtr<Cairo::Context> cr)
         CropParams cropParams = *cropHandler.cropParams;
         if (state == SNormal) {
             switch (options.cropGuides) {
-            case Options::CROP_GUIDE_NONE:
+            case Options::CropGuidesMode::CROP_GUIDE_NONE:
                 cropParams.guide = procparams::CropParams::Guide::NONE;
                 break;
-            case Options::CROP_GUIDE_FRAME:
+            case Options::CropGuidesMode::CROP_GUIDE_FRAME:
                 cropParams.guide = procparams::CropParams::Guide::FRAME;
                 break;
-            default:
-                break;
+            case Options::CropGuidesMode::CROP_GUIDE_FULL:
+            // do nothing - leave the guide mode set the way it was before
+            break;
             }
         }
         bool useBgColor = (state == SNormal || state == SDragPicker || state == SDeletePicker || state == SEditDrag1);
@@ -1899,7 +1900,7 @@ void CropWindow::expose (Cairo::RefPtr<Cairo::Context> cr)
             if (cropHandler.cropParams->enabled) {
                 int cropX, cropY;
                 cropHandler.getPosition (cropX, cropY);
-                drawCrop (cr, x + imgAreaX + imgX, y + imgAreaY + imgY, imgW, imgH, cropX, cropY, zoomSteps[cropZoom].zoom, cropParams, (this == iarea->mainCropWindow), useBgColor, cropHandler.isFullDisplay ());
+                drawCrop (cr, x + imgAreaX + imgX, y + imgAreaY + imgY, imgW, imgH, cropX, cropY, /* scale= */ zoomSteps[cropZoom].zoom, cropParams, /* drawGuide= */ (this == iarea->mainCropWindow), useBgColor, cropHandler.isFullDisplay ());
             }
 
             if (observedCropWin) {
@@ -1978,7 +1979,7 @@ void CropWindow::expose (Cairo::RefPtr<Cairo::Context> cr)
                 cr->fill();
 
                 if (cropHandler.cropParams->enabled) {
-                    drawCrop (cr, x + imgAreaX + imgX, y + imgAreaY + imgY, rough->get_width(), rough->get_height(), cropX, cropY, zoomSteps[cropZoom].zoom, cropParams, (this == iarea->mainCropWindow), useBgColor, cropHandler.isFullDisplay ());
+                    drawCrop (cr, x + imgAreaX + imgX, y + imgAreaY + imgY, rough->get_width(), rough->get_height(), cropX, cropY, /* scale= */ zoomSteps[cropZoom].zoom, cropParams, /* drawGuide= */ (this == iarea->mainCropWindow), useBgColor, cropHandler.isFullDisplay ());
                 }
 
                 if (observedCropWin) {

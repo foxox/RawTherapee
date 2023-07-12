@@ -182,7 +182,12 @@ public:
     double scaleValueToCanvas (double value) override;
     double getZoomFitVal ();
     void setPosition (int x, int y);
+    
+    /// @brief 
+    /// @param x 
+    /// @param y 
     void getPosition (int& x, int& y);
+
     void setSize     (int w, int h, bool norefresh = false);
     void getSize     (int& w, int& h);
     void enable      ();

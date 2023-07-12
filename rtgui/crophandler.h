@@ -72,7 +72,12 @@ public:
     void    setAnchorPosition (int x, int y, bool update = true);
     void    moveAnchor    (int deltaX, int deltaY, bool update = true);
     void    centerAnchor  (bool update = true);
+
+    /// @brief 
+    /// @param x 
+    /// @param y 
     void    getPosition   (int& x, int& y);
+
     void    getSize       (int& w, int& h);
     void    getFullImageSize (int& w, int& h);
 

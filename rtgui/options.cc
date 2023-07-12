@@ -692,7 +692,7 @@ void Options::setDefaults()
     sortMethod = SORT_BY_NAME;
     sortDescending = false;
     rtSettings.lensfunDbDirectory = ""; // set also in main.cc and main-cli.cc
-    cropGuides = CROP_GUIDE_FULL;
+    cropGuides = CropGuidesMode::CROP_GUIDE_FULL;
     cropAutoFit = false;
 
     rtSettings.thumbnail_inspector_mode = rtengine::Settings::ThumbnailInspectorMode::JPEG;
@@ -1733,7 +1733,7 @@ void Options::readFromFile(Glib::ustring fname)
                 }
 
                 if (keyFile.has_key("Crop Settings", "GuidesMode")) {
-                    cropGuides = CropGuidesMode(std::max(int(CROP_GUIDE_NONE), std::min(keyFile.get_integer("Crop Settings", "GuidesMode"), int(CROP_GUIDE_FULL))));
+                    cropGuides = CropGuidesMode(std::max(static_cast<int>(CropGuidesMode::CROP_GUIDE_NONE), std::min(keyFile.get_integer("Crop Settings", "GuidesMode"), static_cast<int>(CropGuidesMode::CROP_GUIDE_FULL))));
                 }
 
                 if (keyFile.has_key("Crop Settings", "AutoFit")) {
@@ -2552,7 +2552,7 @@ void Options::saveToFile(Glib::ustring fname)
         //keyFile.set_integer_list ("GUI", "CurvePanelsExpanded", crvopen);
 
         keyFile.set_integer("Crop Settings", "PPI", cropPPI);
-        keyFile.set_integer("Crop Settings", "GuidesMode", cropGuides);
+        keyFile.set_integer("Crop Settings", "GuidesMode", static_cast<int>(cropGuides));
         keyFile.set_boolean("Crop Settings", "AutoFit", cropAutoFit);
 
         keyFile.set_string("Color Management", "PrinterProfile", rtSettings.printerProfile);

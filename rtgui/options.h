@@ -364,7 +364,12 @@ public:
 
     // cropping options
     int cropPPI;
-    enum CropGuidesMode { CROP_GUIDE_NONE, CROP_GUIDE_FRAME, CROP_GUIDE_FULL };
+    enum class CropGuidesMode : int
+    {
+        CROP_GUIDE_NONE,
+        CROP_GUIDE_FRAME,
+        CROP_GUIDE_FULL
+    };
     CropGuidesMode cropGuides;
     bool cropAutoFit;
 

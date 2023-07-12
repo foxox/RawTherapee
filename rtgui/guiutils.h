@@ -51,7 +51,22 @@ Glib::ustring escapeHtmlChars(const Glib::ustring &src);
 bool removeIfThere (Gtk::Container* cont, Gtk::Widget* w, bool increference = true);
 bool confirmOverwrite (Gtk::Window& parent, const std::string& filename);
 void writeFailed (Gtk::Window& parent, const std::string& filename);
+
+/// @brief Draws the crop guides and frame.
+/// @param cr drawing context pointer
+/// @param imx 
+/// @param imy 
+/// @param imw 
+/// @param imh 
+/// @param startx 
+/// @param starty 
+/// @param scale Image preview zoom level - used in converting between image space and preview space
+/// @param cparams 
+/// @param drawGuide 
+/// @param useBgColor 
+/// @param fullImageVisible 
 void drawCrop (Cairo::RefPtr<Cairo::Context> cr, int imx, int imy, int imw, int imh, int startx, int starty, double scale, const rtengine::procparams::CropParams& cparams, bool drawGuide = true, bool useBgColor = true, bool fullImageVisible = true);
+
 gboolean acquireGUI(void* data);
 void setExpandAlignProperties(Gtk::Widget *widget, bool hExpand, bool vExpand, enum Gtk::Align hAlign, enum Gtk::Align vAlign);
 Gtk::Border getPadding(const Glib::RefPtr<Gtk::StyleContext> style);

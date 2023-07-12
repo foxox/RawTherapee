@@ -92,16 +92,17 @@ void PreviewWindow::updatePreviewImage ()
             if (previewHandler->getCropParams().enabled) {
                 rtengine::procparams::CropParams cparams = previewHandler->getCropParams();
                 switch (options.cropGuides) {
-                case Options::CROP_GUIDE_NONE:
+                case Options::CropGuidesMode::CROP_GUIDE_NONE:
                     cparams.guide = rtengine::procparams::CropParams::Guide::NONE;
                     break;
-                case Options::CROP_GUIDE_FRAME:
+                case Options::CropGuidesMode::CROP_GUIDE_FRAME:
                     cparams.guide = rtengine::procparams::CropParams::Guide::FRAME;
                     break;
-                default:
-                    break;
+                case Options::CropGuidesMode::CROP_GUIDE_FULL:
+                // do nothing - leave the guide mode set the way it was before
+                break;
                 }
-                drawCrop (cc, imgX, imgY, imgW, imgH, 0, 0, zoom, cparams, true, false);
+                drawCrop (cc, imgX, imgY, imgW, imgH, 0, 0, /* scale= */ zoom, cparams, /* drawGuide= */ true, /* useBgColor= */ false);
             }
         }
     }
