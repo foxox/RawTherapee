@@ -30,7 +30,6 @@
 #include "thumbbrowserbase.h"
 #include "thumbnail.h"
 #include "toolbar.h"
-// #include "options.h" todo
 
 #include "../rtengine/procparams.h"
 
