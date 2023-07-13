@@ -79,8 +79,13 @@ class ToolPanel :
 
 protected:
     Glib::ustring toolName;
+    
+    
     ToolPanelListener* listener;
+    
+    /// Holds `listener` while it is disabled
     ToolPanelListener* tmp;
+    
     bool batchMode;  // True if the ToolPanel is used in Batch mode
     bool multiImage; // True if more than one image are being edited at the same time (also imply that batchMode=true), false otherwise
     bool need100Percent;

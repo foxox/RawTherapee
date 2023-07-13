@@ -100,11 +100,11 @@ private:
 
     const std::unique_ptr<CropRatios> crop_ratios;
 
+    // GTK UI elements:
     Gtk::CheckButton* fixr;
     MyComboBoxText* ratio;
     MyComboBoxText* orientation;
     MyComboBoxText* guide;
-
     Gtk::Button* selectCrop;
     Gtk::Button* resetCrop;
     CropPanelListener* clistener;
@@ -125,6 +125,8 @@ private:
     int nw, nh;
     int lastRotationDeg;
     sigc::connection xconn, yconn, wconn, hconn, fconn, rconn, oconn, gconn;
+
+    // Used to track whether left(x), top(y), width(w), height(h), or the fix ratio setting have become dirty, related to ParamsEdited settings.
     bool wDirty, hDirty, xDirty, yDirty, lastFixRatio;
 
     IdleRegister idle_register;

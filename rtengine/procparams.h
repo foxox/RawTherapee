@@ -861,6 +861,7 @@ struct ToneEqualizerParams {
   * Parameters of the cropping
   */
 struct CropParams {
+    /// Guide types possible to display
     enum class Guide {
         NONE,
         FRAME,
@@ -874,21 +875,46 @@ struct CropParams {
         CENTERED_SQUARE
     };
 
+    /// Whether cropping is enabled at all
     bool enabled;
+
+    /// The left edge of the crop area, as an index into the pixel buffer
     int x;
+    /// The top edge of the crop area, as an index into the pixel buffer
     int y;
+    /// The width of the crop area (number of pixels)
     int w;
+    /// The height of the crop area (number of pixels)
     int h;
+    /// Whether the ratio is fixed
     bool fixratio;
+    /// String description of the ratio
     Glib::ustring ratio;
+    /// String description of the orientation (landscape, portrait)
     Glib::ustring orientation;
+    /// The guide type to display
     Guide guide;
 
+    /// Default constructor, initializes parameters to default values
     CropParams();
 
+    /// Equality operators
+    /// @param other The other CropParams to compare to this one
+    /// @{
+    /// @returns true if the two are equal, false otherwise
     bool operator ==(const CropParams& other) const;
+    /// @returns true if the two are inequal, false otherwise
     bool operator !=(const CropParams& other) const;
+    /// @}
 
+    /// @brief TODO
+    /// @param resizedWidth 
+    /// @param resizedHeight 
+    /// @param scale 
+    /// @param x1 
+    /// @param x2 
+    /// @param y1 
+    /// @param y2 
     void mapToResized(int resizedWidth, int resizedHeight, int scale, int& x1, int& x2, int& y1, int& y2) const;
 };
 

@@ -463,7 +463,7 @@ void Crop::read (const ProcParams* pp, const ParamsEdited* pedited)
     xDirty = false;
     yDirty = false;
 
-    if (pedited) {
+    if (pedited != nullptr) {
         wDirty = pedited->crop.w;
         hDirty = pedited->crop.h;
         xDirty = pedited->crop.x;
@@ -532,7 +532,7 @@ void Crop::write (ProcParams* pp, ParamsEdited* pedited)
 
     pp->crop.guide = procparams::CropParams::Guide(guide->get_active_row_number());
 
-    if (pedited) {
+    if (pedited != nullptr) {
         pedited->crop.enabled       = !get_inconsistent();
         pedited->crop.ratio         = ratio->get_active_text() != M("GENERAL_UNCHANGED");
         pedited->crop.orientation   = orientation->get_active_text() != M("GENERAL_UNCHANGED");
@@ -609,7 +609,7 @@ void Crop::doresetCrop ()
         [this]() -> bool
         {
             notifyListener();
-            return false;
+            return false;   // do not execute again - the task is complete
         }
     );
 

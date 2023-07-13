@@ -53,31 +53,37 @@ bool confirmOverwrite (Gtk::Window& parent, const std::string& filename);
 void writeFailed (Gtk::Window& parent, const std::string& filename);
 
 /// @brief Draws the crop guides and frame.
-/// @param cr drawing context pointer
-/// @param imx 
-/// @param imy 
-/// @param imw 
-/// @param imh 
-/// @param startx 
-/// @param starty 
-/// @param scale Image preview zoom level - used in converting between image space and preview space
-/// @param cparams 
-/// @param drawGuide 
-/// @param useBgColor 
-/// @param fullImageVisible 
+/// @param cr Cairo drawing context pointer, for drawing the crop overlay, frame, and guides on the display.
+/// @param imx Top left corner (X value) of the portion of the image currently visible on the screen, in display pixel units.
+/// @param imy Top left corner (Y value) of the portion of the image currently visible on the screen, in display pixel units.
+/// @param imw Width of the portion of the image currently visible on the screen, in display pixel units.
+/// @param imh Height of the portion of the image currently visible on the screen, in display pixel units.
+/// @param startx Top left corner (X value) of crop area, in display pixel units.
+/// @param starty Top left corner (Y value) of crop area, in display pixel units.
+/// @param scale Image preview zoom level - used in converting between image and display coordinates.
+/// @param cparams Crop area parameters, in image pixel units (needs to be converted to display units in this function).
+/// @param drawGuide Whether to draw the guides.
+/// @param useBgColor Whether to use the background color for the crop overlay.
+/// @param fullImageVisible Whether the full image is visible.
 void drawCrop (Cairo::RefPtr<Cairo::Context> cr, int imx, int imy, int imw, int imh, int startx, int starty, double scale, const rtengine::procparams::CropParams& cparams, bool drawGuide = true, bool useBgColor = true, bool fullImageVisible = true);
 
 gboolean acquireGUI(void* data);
 void setExpandAlignProperties(Gtk::Widget *widget, bool hExpand, bool vExpand, enum Gtk::Align hAlign, enum Gtk::Align vAlign);
 Gtk::Border getPadding(const Glib::RefPtr<Gtk::StyleContext> style);
 
+/// @brief The IdleRegister manages a collection of tasks to be done when there are spare CPU cycles and nothing higher priority to do.
 class IdleRegister final :
     public rtengine::NonCopyable
 {
 public:
     ~IdleRegister();
 
+    /// @brief Adds a task to the register.
+    /// @param function The task to run when there is idle time free. Return false to remove the task from the register, or return true to run it again.
+    /// @param priority The task priority.
     void add(std::function<bool ()> function, gint priority = G_PRIORITY_DEFAULT_IDLE);
+
+    /// @brief Removes all outstanding tasks so that they will not run.
     void destroy();
 
 private:

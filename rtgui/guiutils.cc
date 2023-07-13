@@ -56,10 +56,9 @@ void IdleRegister::add(std::function<bool ()> function, gint priority)
                 data_wrapper->self->mutex.unlock();
 
                 delete data_wrapper;
-                return FALSE;
+                return G_SOURCE_REMOVE; // do not execute this task again
             }
-
-            return TRUE;
+            return G_SOURCE_CONTINUE; // execute this task again
         };
 
     DataWrapper* const data_wrapper = new DataWrapper{
@@ -253,10 +252,41 @@ void drawCrop (Cairo::RefPtr<Cairo::Context> cr, int imx, int imy, int imw, int 
     // the c2 values are scaled down by 1 if the full image is not visible - why? - shouldn't the adjustment be made before scaling?
 
     // imxywh bound the entire image - or the entire visible image?
-    imx = 0;
-    imy = 0;
+    // imx = 0;
+    // imy = 0;
+    // when these are set to 0, the crop frame and guides draws at the correct scale, but up at the top left corner of the view. Some issues with the right half of the frame/guides though
+    // so this must be the coordinates in screen space of the top left of the image
+    // Indeed this makes sense with the shaded overlay code below - the overlay does not cover the whole view, only the image
+
+    // std::cout << "fullImageVisible: " << fullImageVisible << std::endl;
+    // std::cout << "imw: " << imw << std::endl;
+    // std::cout << "imh: " << imh << std::endl;
+    // imw, imh somewhat inconsistent - probably an error in the calling code!!!
+
+    // std::cout << "drawGuide: " << drawGuide << std::endl;
+
+
+    // So what I want to add is a checkbox to turn on and off "safe margin".
+    // When enabled, the frame should be drawn larger than the guides
+    // When disabled, the frame should match the guides, like it is already.
+    // It should be easy to queue the image with the full "safe" crop frame, or the smaller "unsafe" frame.
+
+    // Basic version: actual crop size is always the same, checkbox changes ONLY guides rendering.
+    // Better version: checkbox changes crop size, so that two exports can be made easily.
+    // Alternative: two checkboxes. one to enable safe margins display, one to switch between exporting full crop or safe crop. But then the view on the screen doesn't match the output. So this isn't great.
+    // Should try to implement the "better version". Challenges will be to make it stable as the checkbox is checked and unchecked - would hate for aspect ratio corrections to make it inconsistent. Also risk that some code paths are being missed and images may not be updated when they should be (thumbnails, queue, display, etc.)
+
+    // Better version:
+    // In cparams (or whatever the real source of truth is), store two crop rectangles - one for each mode, as optionals.
+    // when checkbox is toggled, populate optional from ratio if it is not yet populated. if already populated, just switch.
+    // When ratio changes, populate the other optional.
+    // What triggers the view to refresh after the crop settings are changed? I guess it must be in the UI handling code.
+
+
+
     
-    /// This simple struct ensures that cr->reset_clip() is invoked at return, no matter how the function is returned. This allows us to return early to avoid unnecessary computation, which in turn allows us to reduce the tab indentation throughout much of the function and makes it easier to track control flow while reading the code.
+
+    /// This "scope guard" ensures that cr->reset_clip() is invoked at return, no matter how the function is returned. This allows us to return early to avoid unnecessary computation, which in turn allows us to reduce the tab indentation throughout much of the function and makes it easier to track control flow while reading the code.
     struct ScopeGuard
     {
         ~ScopeGuard()
@@ -266,12 +296,12 @@ void drawCrop (Cairo::RefPtr<Cairo::Context> cr, int imx, int imy, int imw, int 
         const Cairo::RefPtr<Cairo::Context>& cr;
     } reset_clip_on_return{cr};
 
-    // std::cout << "drawGuide: " << drawGuide << std::endl;
-
+    // Set up the clip region to be around the visible image pixels  - prevents any drawing from accidentally happening in the margins around the photo
     cr->set_line_width (0.);
     cr->rectangle (imx, imy, imw, imh);
     cr->clip ();
 
+    // Corners of the crop frame, relative to (startx,starty), and converted to display pixel units
     const double c1x = (cparams.x - startx) * scale;
     const double c1y = (cparams.y - starty) * scale;
     const double c2x = (cparams.x + cparams.w - startx) * scale - (fullImageVisible ? 0.0 : 1.0);
@@ -288,7 +318,7 @@ void drawCrop (Cairo::RefPtr<Cairo::Context> cr, int imx, int imy, int imw, int 
         cr->set_source_rgb (0.467, 0.467, 0.467);
     }
     // draw the shaded overlay around the crop frame
-    cr->rectangle (imx, imy, imw + 0.5, round(c1y) + 0.5);
+    cr->rectangle (imx, imy, imw + 0.5, round(c1y) + 0.5);  // from top left of image to right edge and top of crop
     cr->rectangle (imx, round(imy + c2y) + 0.5, imw + 0.5, round(imh - c2y) + 0.5);
     cr->rectangle (imx, round(imy + c1y) + 0.5, round(c1x) + 0.5, round(c2y - c1y + 1) + 0.5);
     cr->rectangle (round(imx + c2x) + 0.5, round(imy + c1y) + 0.5, round(imw - c2x) + 0.5, round(c2y - c1y + 1) + 0.5);
@@ -311,9 +341,11 @@ void drawCrop (Cairo::RefPtr<Cairo::Context> cr, int imx, int imy, int imw, int 
         recty2 = min(recty2, imy + imh - 0.5);
     }
 
-    // Set the line width to be visible for all frame and guide drawing operations below (note it is set to 0. above, which is invisible)
+    // Set the line width to be visible for all frame and guide drawing operations below.
+    // Note it is previously set to 0 above, which is invisible for the overlay shading rectangles.
     cr->set_line_width (1.0);
 
+    // Horizontal and vertical line configs are stored here, to be drawn later.
     std::vector<double> horiz_ratios;
     horiz_ratios.reserve(20);
     std::vector<double> vert_ratios;
